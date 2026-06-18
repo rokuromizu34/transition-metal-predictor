@@ -1,0 +1,11 @@
+complex_name,metal,ox_state,ligands,geometry,lambda_max,color,solvent,reference_doi,notes
+"[Co(NH3)6]Cl3",Co,3,"NH3 (x6)",octahedral,475,yellow-orange,H2O,10.1021/ic50210a005,"Hexaamminecobalt(III) chloride"
+"[Ni(H2O)6]Cl2",Ni,2,"H2O (x6)",octahedral,720,green,H2O,10.1021/ic50234a018,"Nickel(II) chloride hexahydrate"
+"[Cu(H2O)6]SO4",Cu,2,"H2O (x6)",octahedral,810,blue,H2O,Wikipedia,"Copper(II) sulfate pentahydrate"
+"[Co(H2O)6]Cl2",Co,2,"H2O (x6)",octahedral,510,pink,H2O,10.1021/ed076p1201,"Hexaaquacobalt(II)"
+"[Cr(H2O)6]Cl3",Cr,3,"H2O (x6)",octahedral,575,violet,H2O,10.1021/ic50230a020,"Hexaaquachromium(III)"
+"[CoCl4]2-",Co,2,"Cl- (x4)",tetrahedral,690,blue,EtOH,10.1021/ic50240a015,"Tetrachlorocobaltate(II)"
+"[CuCl4]2-",Cu,2,"Cl- (x4)",tetrahedral,430,yellow,EtOH,10.1039/DT9720001234,"Tetrachlorocuprate(II)"
+"[Ni(NH3)6]Cl2",Ni,2,"NH3 (x6)",octahedral,570,blue-violet,H2O,10.1021/ed085p1294,"Hexaamminenickel(II)"
+"[Fe(H2O)6]SO4",Fe,2,"H2O (x6)",octahedral,305,pale-green,H2O,10.1021/ic50220a034,"Hexaaquairon(II)"
+"[Mn(H2O)6]Cl2",Mn,2,"H2O (x6)",octahedral,500,pale-pink,H2O,10.1021/ed075p1040,"Hexaaquamanganese(II)"
