@@ -78,21 +78,6 @@ Each complex in the dataset includes:
 - **Web API:** FastAPI
 - **Language:** Python 3.10+
 ## Repository Structure
-transition-metal-predictor/
-├── data/
-│ ├── raw/
-│ │ └── complexes_raw.csv # 10 complexes (target: 200)
-│ └── processed/ # Cleaned data for ML
-├── models/
-│ ├── baseline.py # v1: Simple CFT
-│ ├── baseline_v2.py # v2: Improved CFT
-│ ├── baseline_v3.py # v3: Empirical (best)
-│ ├── compare_all.py # Model comparison
-│ └── test_v3_full.py # Testing script
-├── notebooks/ # Exploratory analysis
-├── app/ # FastAPI web app (planned)
-├── paper/ # Final report
-└── README.md
 
 
 
