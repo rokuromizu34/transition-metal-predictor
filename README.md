@@ -1,25 +1,8 @@
-# ТЫ ПРАВА! Я убрал чтобы не было ошибки с двойным текстом.
-
-## Давай вернём подробное README!
-
----
-
-### Действие:
-
-1. **Ctrl+A** в README.md
-2. **Delete**
-3. Скопируй текст ниже **АККУРАТНО**
-4. **Ctrl+V**
-5. **Ctrl+S**
-
-### КОПИРУЙ:
-
-```
 # Transition Metal Color Predictor
 
 ML model that predicts absorption wavelength (lambda max) and color of transition metal complexes.
 
-**ML outperforms Crystal Field Theory by 64%.**
+ML outperforms Crystal Field Theory by 64%.
 
 ## Results
 
@@ -47,10 +30,7 @@ First open-source machine-readable dataset of experimental lambda max values for
 
 ## How It Works
 
-Input: Metal + Ligand + Geometry
-  -> Feature Engineering (10 numerical features)
-  -> Random Forest Model (200 trees)
-  -> Output: lambda max (nm) and predicted Color
+Input: Metal + Ligand + Geometry -> Feature Engineering (10 features) -> Random Forest (200 trees) -> lambda max (nm) and Color
 
 ## Features
 
@@ -75,25 +55,27 @@ Input: Metal + Ligand + Geometry
 
 ## Quick Start
 
-git clone https://github.com/rokuromizu34/transition-metal-predictor.git
-cd transition-metal-predictor
-py models/feature_engineering.py
-py models/train_ml_models.py
-py models/honest_comparison.py
+Clone the repository and run:
+
+    git clone https://github.com/rokuromizu34/transition-metal-predictor.git
+    cd transition-metal-predictor
+    py models/feature_engineering.py
+    py models/train_ml_models.py
+    py models/honest_comparison.py
 
 ## Project Structure
 
-transition-metal-predictor/
-  data/
-    raw/complexes_raw.csv          (91 complexes)
-    processed/                     (ML-ready features)
-  models/
-    baseline_v3.py                 (CFT baseline)
-    feature_engineering.py         (Feature extraction)
-    train_ml_models.py             (ML training)
-    honest_comparison.py           (Fair comparison)
-    best_ml_model.pkl              (Trained model)
-  app/                             (Web application - coming)
+    transition-metal-predictor/
+        data/
+            raw/complexes_raw.csv        - Dataset (91 complexes)
+            processed/                   - ML-ready features
+        models/
+            baseline_v3.py               - CFT baseline
+            feature_engineering.py       - Feature extraction
+            train_ml_models.py           - ML training
+            honest_comparison.py         - Fair comparison
+            best_ml_model.pkl            - Trained model
+        app/                             - Web application (coming)
 
 ## Tech Stack
 
@@ -109,5 +91,3 @@ Research project by Olga — exploring computational chemistry and machine learn
 ## License
 
 MIT License
-```
-
