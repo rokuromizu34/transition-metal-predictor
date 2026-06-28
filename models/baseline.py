@@ -5,35 +5,30 @@ Predicts lambda_max based on spectrochemical series and geometry
 
 import pandas as pd
 import numpy as np
-
-# Spectrochemical series (ligand field strength)
 LIGAND_STRENGTH = {
-    'I-': 0.5,
-    'Br-': 0.6,
-    'Cl-': 0.7,
-    'F-': 0.8,
-    'OH-': 0.9,
-    'H2O': 1.0,
-    'NCS-': 1.1,
-    'NH3': 1.3,
-    'en': 1.5,  # ethylenediamine
-    'bpy': 1.6,  # bipyridine
-    'phen': 1.6,  # phenanthroline
+    'I-': 0.6,
+    'Br-': 0.7,
+    'Cl-': 0.8,
+    'F-': 0.9,
+    'OH-': 1.0,
+    'H2O': 1.0,   
+    'NH3': 1.25,
+    'en': 1.4,   
+    'bpy': 1.5,   
+    'phen': 1.5,   
     'NO2-': 1.6,
     'CN-': 1.7,
     'CO': 1.8
 }
 
-# Geometry splitting factors (relative to octahedral)
 GEOMETRY_FACTOR = {
     'octahedral': 1.0,
-    'tetrahedral': 0.44,  # ~4/9
-    'square_planar': 1.3,
-    'trigonal_bipyramidal': 0.8,
+    'tetrahedral': 0.45, 
+    'square_planar': 1.2,
+    'trigonal_bipyramidal': 0.85,
     'square_pyramidal': 0.9,
-    'linear': 0.5
+    'linear': 0.3
 }
-
 # d-electron count
 D_ELECTRONS = {
     ('Sc', 3): 0, ('Ti', 2): 2, ('Ti', 3): 1, ('Ti', 4): 0,
@@ -58,29 +53,28 @@ def extract_ligand_type(ligand_str):
     
     return 'H2O'  # default
 
-
 def predict_lambda_max_cft(metal, ox_state, geometry, ligands_str):
     """
     Predict lambda_max using simplified CFT
     
     Returns: predicted lambda_max in nm
     """
-    # Get ligand strength
     ligand = extract_ligand_type(ligands_str)
-    ligand_str = LIGAND_STRENGTH.get(ligand, 1.0)
-    
-    # Get geometry factor
+    ligand_strength = LIGAND_STRENGTH.get(ligand, 1.0)
+
     geom_factor = GEOMETRY_FACTOR.get(geometry.lower(), 1.0)
     
-    # Calculate Δ (splitting energy)
-    delta = ligand_str * geom_factor * (ox_state ** 0.5)
+    delta = ligand_strength * geom_factor * (ox_state * 1000)  
     
-    # λmax inversely proportional to Δ
-    constant = 20000  # calibration constant
+    if geometry.lower() == 'tetrahedral':
+        constant = 400000 
+    else:
+        constant = 600000 
+    
     lambda_max = constant / delta
+    lambda_max = max(200, min(lambda_max, 1200))
     
     return round(lambda_max, 1)
-
 
 def predict_color_from_lambda(lambda_nm):
     """Convert wavelength to observed color (complementary)"""

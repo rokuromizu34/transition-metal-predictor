@@ -1,102 +1,113 @@
-# Transition Metal Complex Color Predictor
+# ТЫ ПРАВА! Я убрал чтобы не было ошибки с двойным текстом.
 
-🧪 ML-based tool for predicting absorption spectra (λmax) and observed color of transition metal coordination compounds.
+## Давай вернём подробное README!
 
-## Project Status
-🚧 **In Development** (Started: June 2024)
+---
 
-### Current Progress
-- [x] Project structure
-- [x] Initial dataset collection
-  - [x] Co complexes (4/50)
-  - [x] Ni complexes (2/50)
-  - [x] Cu complexes (2/40)
-  - [x] Fe complexes (1/30)
-  - [x] Other metals (1/30) - Cr, Mn
-  - **Total: 10 complexes collected**
-- [x] Baseline models developed ✅
-  - [x] v1: Simple CFT (MAE: 257 nm)
-  - [x] v2: Improved CFT (MAE: 314 nm)
-  - [x] **v3: Empirical model (MAE: 1.6 nm) 🏆**
-- [ ] Expand dataset to 50-100 complexes (in progress)
-- [ ] ML model training (next step)
-- [ ] Web application
-- [ ] Dataset publication (Zenodo)
-## Model Performance
+### Действие:
 
-We tested three different baseline approaches:
+1. **Ctrl+A** в README.md
+2. **Delete**
+3. Скопируй текст ниже **АККУРАТНО**
+4. **Ctrl+V**
+5. **Ctrl+S**
 
-| Model | Approach | MAE | Best Use Case |
-|-------|----------|-----|---------------|
-| **v1** | Simple CFT formula | 257.1 nm | Educational (shows theory limitations) |
-| **v2** | CFT with empirical factors | 314.4 nm | Failed attempt (worse than v1) |
-| **v3** | Data-driven empirical | **1.6 nm** | **Production model** ✅ |
+### КОПИРУЙ:
 
-### Key Finding
-**Empirical (data-driven) models significantly outperform pure theoretical approaches (CFT)** for predicting transition metal complex properties. This validates the use of machine learning for chemistry.
+```
+# Transition Metal Color Predictor
 
-### Baseline v3 Performance Details
-- **Perfect predictions (0 nm error):** 5/7 test cases
-  - [Ni(H2O)6]2+, [Cu(H2O)6]2+, [CoCl4]2-, [CuCl4]2-, [Fe(H2O)6]2+
-- **Near-perfect (<10 nm error):** 2/7 test cases
-  - [Co(NH3)6]3+ (5 nm), [Ni(NH3)6]2+ (6 nm)
-- **Mean Absolute Error:** 1.6 nm (~0.3% relative error!)
+ML model that predicts absorption wavelength (lambda max) and color of transition metal complexes.
 
-This performance is **comparable to expensive quantum chemistry calculations** (DFT), but runs **instantly** on any computer.
+**ML outperforms Crystal Field Theory by 64%.**
 
-## What This Project Does
+## Results
 
-**Problem:** Predicting the color of transition metal coordination compounds is difficult:
-- Crystal Field Theory (CFT) gives rough estimates
-- Quantum chemistry (DFT) is accurate but computationally expensive
+| Model | MAE (nm) | Description |
+|-------|----------|-------------|
+| Crystal Field Theory (baseline) | 110.6 | Rule-based spectrochemical series |
+| Random Forest (ML) | 40.1 | Trained on 91 complexes |
 
-**Solution:** Train a machine learning model on experimental UV-Vis data to predict:
-- λmax (wavelength of maximum absorption)
-- Observed color of the complex
+## Dataset
 
-## Dataset Schema
-Each complex in the dataset includes:
-- Metal center (element, oxidation state)
-- Ligands (type, count, denticity)
-- Coordination geometry (octahedral, tetrahedral, square planar, etc.)
-- Experimental λmax (nm) from UV-Vis spectroscopy
-- Observed color
-- Solvent used
-- Literature reference (DOI)
+First open-source machine-readable dataset of experimental lambda max values for coordination compounds.
 
-## Current Dataset Stats
-- **Total complexes:** 10
-- **Metals covered:** Co, Ni, Cu, Fe, Cr, Mn
-- **Geometries:** Octahedral (8), Tetrahedral (2)
-- **Baseline Model MAE:** ~XX nm (to be calculated)
+- 91 complexes across 8 metals (Ti, V, Cr, Mn, Fe, Co, Ni, Cu)
+- 3 geometries: octahedral, tetrahedral, square planar
+- 20 ligand types: from I (weak field) to CN (strong field)
+- Source: Miessler and Tarr, Inorganic Chemistry, 5th ed. (2014)
 
-## Tech Stack
-- **Data collection & processing:** pandas, numpy
-- **Baseline models:** Custom empirical model (v3)  ← ДОБАВЬ ЭТУ СТРОКУ
-- **Machine Learning:** scikit-learn (Random Forest, Gradient Boosting)
-- **Visualization:** matplotlib, seaborn
-- **Web API:** FastAPI
-- **Language:** Python 3.10+
-## Repository Structure
-transition-metal-predictor/
-├── data/
-│   ├── raw/
-│   │   └── complexes_raw.csv      # 10 complexes (target: 200)
-│   └── processed/                  # Cleaned data for ML
-├── models/
-│   ├── baseline.py                 # v1: Simple CFT
-│   ├── baseline_v2.py              # v2: Improved CFT
-│   ├── baseline_v3.py              # v3: Empirical (best)
-│   ├── compare_all.py              # Model comparison
-│   └── test_v3_full.py             # Testing script
-├── notebooks/                      # Exploratory analysis
-├── app/                            # FastAPI web app (planned)
-├── paper/                          # Final report
-└── README.md
+## Key Findings
 
+1. ML improves predictions by 64% compared to Crystal Field Theory
+2. Counter-ions do not affect lambda max (confirmed across dataset)
+3. Most important features: ligand strength (27%), d-electron count (27%)
+4. Best predictions: Cr complexes (MAE = 26 nm), Mn (MAE = 29 nm)
+5. Hardest to predict: Fe complexes (MAE = 91 nm) due to spin-state effects
 
-## Installation
-```bash
+## How It Works
+
+Input: Metal + Ligand + Geometry
+  -> Feature Engineering (10 numerical features)
+  -> Random Forest Model (200 trees)
+  -> Output: lambda max (nm) and predicted Color
+
+## Features
+
+| Feature | Importance | Description |
+|---------|-----------|-------------|
+| ligand_strength | 27.0% | Spectrochemical series value |
+| d_electrons | 26.7% | Number of d-electrons |
+| effective_field | 18.2% | Ligand strength x geometry factor |
+| metal_Z | 14.4% | Atomic number of metal |
+| ox_state | 9.4% | Oxidation state |
+
+## MAE by Metal
+
+| Metal | N | Baseline | ML | Improvement |
+|-------|---|----------|-----|-------------|
+| Co | 21 | 64 nm | 32 nm | 2.0x |
+| Ni | 16 | 81 nm | 33 nm | 2.5x |
+| Cu | 15 | 171 nm | 43 nm | 4.0x |
+| Fe | 11 | 261 nm | 91 nm | 2.9x |
+| Cr | 15 | 66 nm | 26 nm | 2.6x |
+| Mn | 8 | 89 nm | 29 nm | 3.1x |
+
+## Quick Start
+
 git clone https://github.com/rokuromizu34/transition-metal-predictor.git
 cd transition-metal-predictor
-python -m pip install -r requirements.txt
+py models/feature_engineering.py
+py models/train_ml_models.py
+py models/honest_comparison.py
+
+## Project Structure
+
+transition-metal-predictor/
+  data/
+    raw/complexes_raw.csv          (91 complexes)
+    processed/                     (ML-ready features)
+  models/
+    baseline_v3.py                 (CFT baseline)
+    feature_engineering.py         (Feature extraction)
+    train_ml_models.py             (ML training)
+    honest_comparison.py           (Fair comparison)
+    best_ml_model.pkl              (Trained model)
+  app/                             (Web application - coming)
+
+## Tech Stack
+
+- Data: pandas, numpy
+- ML: scikit-learn (Random Forest, Gradient Boosting)
+- Web: Streamlit (planned)
+- Language: Python 3.10+
+
+## Author
+
+Research project by Olga — exploring computational chemistry and machine learning.
+
+## License
+
+MIT License
+```
+
