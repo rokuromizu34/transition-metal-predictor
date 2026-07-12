@@ -83,12 +83,18 @@ with c2:
 
 custom = st.text_input("Mixed ligands (e.g. en+NH3)", value="")
 show_debug = st.checkbox("Show debug", value=False)
+@st.cache_data
+def load_raw_df():
+    return pd.read_csv(ROOT / "data/raw/complexes_raw.csv")
 
+raw_df = load_raw_df()
 if st.button("PREDICT COLOR", type="primary", use_container_width=True):
     lig_input = custom.strip() if custom.strip() else ligand
     X = build_features(metal, int(ox_state), lig_input, geometry)
     pred = float(model.predict(X)[0])
     lam = 1e7 / pred if meta.get("target") == "wavenumber_cm-1" else pred
+    seen_metal_ox = ((raw_df["metal"] == metal) & (raw_df["ox_state"] == int(ox_state))).any()
+    confidence = "Higher confidence (metal+ox seen in training)" if seen_metal_ox else "Lower confidence (metal+ox not seen in training)"
 
     key = (metal, int(ox_state), lig_input, geometry)
     if key in KNOWN_COLORS:
@@ -110,6 +116,7 @@ if st.button("PREDICT COLOR", type="primary", use_container_width=True):
         "perc_name": perc_name,
         "abs_label": wavelength_to_absorbed_name(lam),
         "verified": verified,
+        "confidence": confidence,
     }
 
 # ---- Рендер результата (показывается всегда, если уже считали) ----
@@ -153,7 +160,7 @@ if "result" in st.session_state:
       <div style="height:1px;background:#EEE;margin:18px 0;"></div>
 
       <div style="color:#AAA;font-size:11px;">
-        Complex: [{r["metal"]}({r["lig_input"]})]<sup>{r["ox_state"]}+</sup> · {r["geometry"]} · {source_note} · 91 complexes · ExtraTrees
+        Complex: [{r["metal"]}({r["lig_input"]})]<sup>{r["ox_state"]}+</sup> · {r["geometry"]} · {source_note} · {r["confidence"]} · 91 complexes · ExtraTrees
       </div>
     </div>
     """
