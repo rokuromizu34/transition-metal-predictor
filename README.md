@@ -1,93 +1,80 @@
 # Transition Metal Color Predictor
 
-ML model that predicts absorption wavelength (lambda max) and color of transition metal complexes.
+A web app that predicts the absorption maximum (λmax) and the perceived solution color of transition‑metal coordination complexes from simple chemistry inputs: **metal + oxidation state + ligands + geometry**.
 
-ML outperforms Crystal Field Theory by 64%.
+**Live demo:** https://transition-metal-predictor-egpj469g6to22fqsv3yd9w.streamlit.app/
 
-## Results
+---
 
-| Model | MAE (nm) | Description |
-|-------|----------|-------------|
-| Crystal Field Theory (baseline) | 110.6 | Rule-based spectrochemical series |
-| Random Forest (ML) | 40.1 | Trained on 91 complexes |
+## What it does
+
+**Input**
+- Metal (Ti, V, Cr, Mn, Fe, Co, Ni, Cu)
+- Oxidation state
+- Ligand(s) (supports mixed ligands like `en+NH3`)
+- Geometry (octahedral / tetrahedral / square planar)
+
+**Output**
+- Predicted **λmax (nm)**
+- Absorbed color + perceived color swatches (HEX)
+- Confidence hint (whether similar metal+oxidation was seen in training)
+
+---
 
 ## Dataset
 
-First open-source machine-readable dataset of experimental lambda max values for coordination compounds.
+- **91** experimental complexes
+- **8** metals: Ti, V, Cr, Mn, Fe, Co, Ni, Cu
+- **3** geometries: octahedral, tetrahedral, square planar
+- Ligand field strength encoded via a spectrochemical series scale (including mixed ligands)
 
-- 91 complexes across 8 metals (Ti, V, Cr, Mn, Fe, Co, Ni, Cu)
-- 3 geometries: octahedral, tetrahedral, square planar
-- 20 ligand types: from I (weak field) to CN (strong field)
-- Source: Miessler and Tarr, Inorganic Chemistry, 5th ed. (2014)
+**Source (literature):** Miessler & Tarr, *Inorganic Chemistry*, 5th ed. (2014).  
+*(Dataset is compiled for educational/research purposes; please cite the source.)*
 
-## Key Findings
+---
 
-1. ML improves predictions by 64% compared to Crystal Field Theory
-2. Counter-ions do not affect lambda max (confirmed across dataset)
-3. Most important features: ligand strength (27%), d-electron count (27%)
-4. Best predictions: Cr complexes (MAE = 26 nm), Mn (MAE = 29 nm)
-5. Hardest to predict: Fe complexes (MAE = 91 nm) due to spin-state effects
+## Feature engineering (10 features)
 
-## How It Works
+Crystal‑Field‑Theory inspired descriptors:
 
-Input: Metal + Ligand + Geometry -> Feature Engineering (10 features) -> Random Forest (200 trees) -> lambda max (nm) and Color
+- `metal_Z`
+- `ox_state`
+- `d_electrons`
+- `ligand_strength` (supports stoichiometry like `NH3*5+Cl*1`)
+- `coord_number`
+- `geom_factor`
+- `effective_field = ligand_strength × geom_factor`
+- `is_octahedral`, `is_tetrahedral`, `is_square_planar`
 
-## Features
+---
 
-| Feature | Importance | Description |
-|---------|-----------|-------------|
-| ligand_strength | 27.0% | Spectrochemical series value |
-| d_electrons | 26.7% | Number of d-electrons |
-| effective_field | 18.2% | Ligand strength x geometry factor |
-| metal_Z | 14.4% | Atomic number of metal |
-| ox_state | 9.4% | Oxidation state |
+## Model
 
-## MAE by Metal
+- Model: **ExtraTreesRegressor** (scikit‑learn)
+- Target transformation: model predicts **wavenumber (cm⁻¹)**, then converts back to **nm**
 
-| Metal | N | Baseline | ML | Improvement |
-|-------|---|----------|-----|-------------|
-| Co | 21 | 64 nm | 32 nm | 2.0x |
-| Ni | 16 | 81 nm | 33 nm | 2.5x |
-| Cu | 15 | 171 nm | 43 nm | 4.0x |
-| Fe | 11 | 261 nm | 91 nm | 2.9x |
-| Cr | 15 | 66 nm | 26 nm | 2.6x |
-| Mn | 8 | 89 nm | 29 nm | 3.1x |
+\[
+\lambda(\text{nm}) = \frac{10^7}{\tilde{\nu}(\text{cm}^{-1})}
+\]
 
-## Quick Start
+---
 
-Clone the repository and run:
+## Performance (MAE in nm)
 
-    git clone https://github.com/rokuromizu34/transition-metal-predictor.git
-    cd transition-metal-predictor
-    py models/feature_engineering.py
-    py models/train_ml_models.py
-    py models/honest_comparison.py
+Because the dataset is small, performance depends on the evaluation protocol:
 
-## Project Structure
+- **Random KFold(5):** MAE ≈ **64 nm**
+- **GroupKFold (hold out entire metal):** MAE ≈ **101 nm**
+- **GroupKFold (hold out metal + oxidation state):** MAE ≈ **112 nm**
 
-    transition-metal-predictor/
-        data/
-            raw/complexes_raw.csv        - Dataset (91 complexes)
-            processed/                   - ML-ready features
-        models/
-            baseline_v3.py               - CFT baseline
-            feature_engineering.py       - Feature extraction
-            train_ml_models.py           - ML training
-            honest_comparison.py         - Fair comparison
-            best_ml_model.pkl            - Trained model
-        app/                             - Web application (coming)
+**Known limitation:** Fe(III) (d⁵ high‑spin) systems often show UV / spin‑forbidden transitions that are not captured by the current feature set, so errors can be large.
 
-## Tech Stack
+---
 
-- Data: pandas, numpy
-- ML: scikit-learn (Random Forest, Gradient Boosting)
-- Web: Streamlit (planned)
-- Language: Python 3.10+
+## Quick start (local)
 
-## Author
-
-Research project by Olga — exploring computational chemistry and machine learning.
-
-## License
-
-MIT License
+```bash
+pip install -r requirements.txt
+py models/feature_engineering.py
+py models/train_fast.py
+py -m streamlit run app/main.py
