@@ -34,6 +34,12 @@ def load_artifacts():
     return m, fn
 
 model, feature_names = load_artifacts()
+@st.cache_resource
+def load_meta():
+    p = ROOT / "models" / "model_meta.pkl"
+    return joblib.load(p) if p.exists() else {}
+
+meta = load_meta()
 
 def build_features(metal, ox, ligand_str, geometry):
     parts = [p.strip() for p in ligand_str.split('+')]
@@ -76,13 +82,11 @@ with c2:
     geometry = st.selectbox("Geometry", list(GEOMETRY_CN.keys()), index=0)
 
 custom = st.text_input("Mixed ligands (e.g. en+NH3)", value="")
+show_debug = st.checkbox("Show debug", value=False)
 
 if st.button("PREDICT COLOR", type="primary", use_container_width=True):
-
     lig_input = custom.strip() if custom.strip() else ligand
-    X   = build_features(metal, int(ox_state), lig_input, geometry)
-    import joblib
-    meta = joblib.load(ROOT / "models" / "model_meta.pkl")
+    X = build_features(metal, int(ox_state), lig_input, geometry)
     pred = float(model.predict(X)[0])
     lam = 1e7 / pred if meta.get("target") == "wavenumber_cm-1" else pred
 
@@ -94,8 +98,24 @@ if st.button("PREDICT COLOR", type="primary", use_container_width=True):
         perc_hex, abs_hex, perc_name = spectrum_to_hex(lam, fwhm_nm=120.0)
         verified = False
 
-    abs_label = wavelength_to_absorbed_name(lam)
-    source_note = "Experimentally verified color" if verified else "Calculated from CIE 1931 + λmax"
+    st.session_state["result"] = {
+        "metal": metal,
+        "ox_state": int(ox_state),
+        "lig_input": lig_input,
+        "geometry": geometry,
+        "X": X,
+        "lam": lam,
+        "perc_hex": perc_hex,
+        "abs_hex": abs_hex,
+        "perc_name": perc_name,
+        "abs_label": wavelength_to_absorbed_name(lam),
+        "verified": verified,
+    }
+
+# ---- Рендер результата (показывается всегда, если уже считали) ----
+if "result" in st.session_state:
+    r = st.session_state["result"]
+    source_note = "Experimentally verified color" if r["verified"] else "Calculated from CIE 1931 + λmax"
 
     html = f"""
     <div style="border:1px solid #E8E8E8;border-radius:18px;padding:24px 28px;
@@ -105,22 +125,27 @@ if st.button("PREDICT COLOR", type="primary", use_container_width=True):
 
         <div style="flex:1;min-width:140px;">
           <div style="color:#999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">λMAX PREDICTED</div>
-          <div style="font-size:36px;font-weight:900;color:#111;">{lam:.0f} <span style="font-size:16px;color:#999;font-weight:400;">nm</span></div>
-          <div style="display:inline-block;padding:3px 10px;border-radius:999px;background:#F0F0F0;font-size:11px;color:#666;margin-top:4px;">MAE ≈ 105 nm</div>
+          <div style="font-size:36px;font-weight:900;color:#111;">{r["lam"]:.0f}
+            <span style="font-size:16px;color:#999;font-weight:400;">nm</span>
+          </div>
+          <div style="display:inline-block;padding:3px 10px;border-radius:999px;background:#F0F0F0;
+                      font-size:11px;color:#666;margin-top:4px;">KFold MAE ≈ 64 nm · Metal-held-out ≈ 101 nm · Metal+ox ≈ 112 nm</div>
         </div>
 
         <div style="flex:1;min-width:140px;">
           <div style="color:#999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">ABSORBED</div>
-          <div style="width:56px;height:56px;border-radius:12px;background:{abs_hex};border:2px solid rgba(0,0,0,0.1);margin:6px 0;"></div>
-          <div style="font-size:18px;font-weight:800;color:#111;">{abs_label.upper()}</div>
-          <div style="font-size:11px;color:#AAA;font-family:monospace;">{abs_hex}</div>
+          <div style="width:56px;height:56px;border-radius:12px;background:{r["abs_hex"]};
+                      border:2px solid rgba(0,0,0,0.1);margin:6px 0;"></div>
+          <div style="font-size:18px;font-weight:800;color:#111;">{r["abs_label"].upper()}</div>
+          <div style="font-size:11px;color:#AAA;font-family:monospace;">{r["abs_hex"]}</div>
         </div>
 
         <div style="flex:1;min-width:140px;">
           <div style="color:#999;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;">PERCEIVED (IN SOLUTION)</div>
-          <div style="width:56px;height:56px;border-radius:12px;background:{perc_hex};border:2px solid rgba(0,0,0,0.1);margin:6px 0;"></div>
-          <div style="font-size:18px;font-weight:800;color:#111;">{perc_name.upper()}</div>
-          <div style="font-size:11px;color:#AAA;font-family:monospace;">{perc_hex}</div>
+          <div style="width:56px;height:56px;border-radius:12px;background:{r["perc_hex"]};
+                      border:2px solid rgba(0,0,0,0.1);margin:6px 0;"></div>
+          <div style="font-size:18px;font-weight:800;color:#111;">{r["perc_name"].upper()}</div>
+          <div style="font-size:11px;color:#AAA;font-family:monospace;">{r["perc_hex"]}</div>
         </div>
 
       </div>
@@ -128,13 +153,13 @@ if st.button("PREDICT COLOR", type="primary", use_container_width=True):
       <div style="height:1px;background:#EEE;margin:18px 0;"></div>
 
       <div style="color:#AAA;font-size:11px;">
-        Complex: [{metal}({lig_input})]<sup>{ox_state}+</sup> · {geometry} · {source_note} · 91 complexes · Random Forest
+        Complex: [{r["metal"]}({r["lig_input"]})]<sup>{r["ox_state"]}+</sup> · {r["geometry"]} · {source_note} · 91 complexes · ExtraTrees
       </div>
     </div>
     """
-
     st.components.v1.html(html, height=280, scrolling=False)
 
-    with st.expander("Debug: features → model"):
-        st.dataframe(X)
-        st.write(f"perc={perc_hex} | abs={abs_hex} | name={perc_name}")
+    if show_debug:
+        st.subheader("Debug: features → model")
+        st.dataframe(r["X"])
+        st.caption(f'perc={r["perc_hex"]} | abs={r["abs_hex"]} | name={r["perc_name"]}')
