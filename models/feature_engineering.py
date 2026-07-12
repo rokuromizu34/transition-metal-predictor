@@ -29,15 +29,15 @@ LIGAND_STRENGTH = {
 }
 
 GEOMETRY_CN = {
-    'octahedral':      6,
-    'tetrahedral':     4,
-    'square_planar':   4
+    'octahedral':    6,
+    'tetrahedral':   4,
+    'square_planar': 4
 }
 
 GEOMETRY_FACTOR = {
-    'octahedral':      1.00,
-    'tetrahedral':     0.44,
-    'square_planar':   1.20
+    'octahedral':    1.00,
+    'tetrahedral':   0.44,
+    'square_planar': 1.20
 }
 
 METAL_Z = {
@@ -57,21 +57,53 @@ D_ELECTRONS = {
 }
 
 
+def wavelength_to_color(nm):
+    if nm < 380:
+        return 'colorless'
+    elif nm < 430:
+        return 'yellow-green'
+    elif nm < 480:
+        return 'orange'
+    elif nm < 490:
+        return 'orange-red'
+    elif nm < 500:
+        return 'red'
+    elif nm < 560:
+        return 'purple'
+    elif nm < 580:
+        return 'violet'
+    elif nm < 600:
+        return 'blue'
+    elif nm < 620:
+        return 'blue'
+    elif nm < 700:
+        return 'green'
+    elif nm < 800:
+        return 'blue-green'
+    else:
+        return 'pale'
+
 def parse_ligand_strength(ligand_str):
-    """Parse ligand string, handle mixed ligands like NH3+Cl"""
     parts = ligand_str.split('+')
-    values = []
+    total = 0.0
+    n = 0
     for part in parts:
         part = part.strip()
-        val = LIGAND_STRENGTH.get(part, 1.0)
-        values.append(val)
-    return sum(values) / len(values)
+        if '*' in part:
+            lig, cnt = part.split('*', 1)
+            lig = lig.strip()
+            cnt = int(cnt.strip())
+        else:
+            lig, cnt = part, 1
 
+        val = LIGAND_STRENGTH.get(lig, 1.0)
+        total += val * cnt
+        n += cnt
+
+    return total / max(n, 1)
 
 def extract_features(df):
-    """Convert raw data into numerical features"""
     rows = []
-
     for _, row in df.iterrows():
         metal = row['metal']
         ox = int(row['ox_state'])
@@ -79,16 +111,15 @@ def extract_features(df):
         geometry = str(row['geometry'])
 
         f = {}
-
-        f['metal_Z'] = METAL_Z.get(metal, 26)
-        f['ox_state'] = ox
-        f['d_electrons'] = D_ELECTRONS.get((metal, ox), 5)
+        f['metal_Z']       = METAL_Z.get(metal, 26)
+        f['ox_state']      = ox
+        f['d_electrons']   = D_ELECTRONS.get((metal, ox), 5)
         f['ligand_strength'] = parse_ligand_strength(ligand)
-        f['coord_number'] = GEOMETRY_CN.get(geometry, 6)
-        f['geom_factor'] = GEOMETRY_FACTOR.get(geometry, 1.0)
+        f['coord_number']  = GEOMETRY_CN.get(geometry, 6)
+        f['geom_factor']   = GEOMETRY_FACTOR.get(geometry, 1.0)
         f['effective_field'] = f['ligand_strength'] * f['geom_factor']
-        f['is_octahedral'] = 1 if geometry == 'octahedral' else 0
-        f['is_tetrahedral'] = 1 if geometry == 'tetrahedral' else 0
+        f['is_octahedral']   = 1 if geometry == 'octahedral' else 0
+        f['is_tetrahedral']  = 1 if geometry == 'tetrahedral' else 0
         f['is_square_planar'] = 1 if geometry == 'square_planar' else 0
 
         rows.append(f)
@@ -103,16 +134,20 @@ if __name__ == '__main__':
     X = extract_features(df)
     y = df['lambda_max']
 
+    df['perceived_color'] = y.apply(wavelength_to_color)
+
     print(f"Dataset: {len(df)} complexes")
     print(f"Features: {list(X.columns)}")
     print(f"Lambda max range: {y.min()} - {y.max()} nm")
-    print(f"\nFirst 5 rows:")
-    print(X.head())
+    print(f"\nFirst 5 rows with COLOR:")
+    print(df[['metal', 'ligands', 'lambda_max', 'perceived_color']].head())
 
     out = Path(__file__).parent.parent / 'data' / 'processed'
     out.mkdir(parents=True, exist_ok=True)
 
     X.to_csv(out / 'features.csv', index=False)
     y.to_csv(out / 'target.csv', index=False)
+    df.to_csv(out / 'full_with_colors.csv', index=False)
 
     print(f"\nSaved to {out}")
+    print("Done!")

@@ -12,10 +12,10 @@ complex_name,metal,ox_state,ligands,geometry,lambda_max,color,solvent,source
 [CoI4]2-,Co,2,I,tetrahedral,710,deep-blue,EtOH,Miessler_Tarr_2014
 [Co(SCN)6]3-,Co,3,SCN,octahedral,620,blue,H2O,Miessler_Tarr_2014
 [Co(NO2)6]3-,Co,3,NO2,octahedral,450,yellow,H2O,Miessler_Tarr_2014
-[Co(NH3)5Cl]2+,Co,3,NH3+Cl,octahedral,530,purple,H2O,Miessler_Tarr_2014
+[Co(NH3)5Cl]2+,Co,3,NH3*5+Cl*1,octahedral,530,purple,H2O,Miessler_Tarr_2014
 [Co(NH3)5NO2]2+,Co,3,NH3+NO2,octahedral,475,orange,H2O,Miessler_Tarr_2014
 [Co(NH3)5H2O]3+,Co,3,NH3+H2O,octahedral,490,red-orange,H2O,Miessler_Tarr_2014
-[Co(NH3)4Cl2]+,Co,3,NH3+Cl,octahedral,535,violet,H2O,Miessler_Tarr_2014
+[Co(NH3)4Cl2]+,Co,3,NH3*4+Cl*2,octahedral,535,violet,H2O,Miessler_Tarr_2014
 [Co(ox)2]-,Co,3,ox,octahedral,550,red,H2O,Miessler_Tarr_2014
 [CoF6]3-,Co,3,F,octahedral,700,pink,H2O,Miessler_Tarr_2014
 [Co(edta)]-,Co,3,edta,octahedral,490,red,H2O,Miessler_Tarr_2014
