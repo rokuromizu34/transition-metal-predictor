@@ -173,6 +173,6 @@ if "result" in st.session_state:
     st.components.v1.html(html, height=280, scrolling=False)
 
     if show_debug:
-        st.subheader("Debug: features → model")
-        st.dataframe(r["X"])
-        st.caption(f'perc={r["perc_hex"]} | abs={r["abs_hex"]} | name={r["perc_name"]}')
+        with st.expander("Debug: features → model", expanded=False):
+            st.dataframe(r["X"], use_container_width=True, hide_index=True)
+            st.code(f'perc={r["perc_hex"]} | abs={r["abs_hex"]} | name={r["perc_name"]}', language="text")
