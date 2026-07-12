@@ -9,10 +9,10 @@ A web app that predicts λmax and perceived solution color of transition-metal c
 
 ## What it does
 
-**Input:** Metal · Oxidation state · Ligand(s) · Geometry  
+**Input:** Metal · Oxidation state · Ligand(s) · Geometry
 **Output:** λmax (nm) · Absorbed color · Perceived color (HEX) · Confidence hint
 
-Supports mixed ligands (e.g. `en+NH3`).
+Supports mixed ligands (e.g. en+NH3).
 
 ---
 
@@ -54,8 +54,33 @@ Known limitation: Fe(III) d5 high-spin systems (UV/spin-forbidden transitions).
 
 ## Quick start
 
-```bash
 pip install -r requirements.txt
 py models/feature_engineering.py
 py models/train_fast.py
 py -m streamlit run app/main.py
+
+---
+
+## Structure
+
+transition-metal-predictor/
+  app/main.py
+  app/color_utils.py
+  data/raw/complexes_raw.csv
+  models/best_ml_model.pkl
+  models/feature_engineering.py
+  models/train_fast.py
+  requirements.txt
+
+---
+
+## Citation
+
+Miessler, G. L.; Tarr, D. A. Inorganic Chemistry, 5th ed., 2014.
+
+---
+
+## License
+
+MIT
+'@ | Set-Content -Encoding UTF8 README.md
