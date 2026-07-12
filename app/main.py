@@ -87,6 +87,7 @@ show_debug = st.checkbox("Show debug", value=False)
 def load_raw_df():
     return pd.read_csv(ROOT / "data/raw/complexes_raw.csv")
 
+
 raw_df = load_raw_df()
 if st.button("PREDICT COLOR", type="primary", use_container_width=True):
     lig_input = custom.strip() if custom.strip() else ligand
@@ -121,7 +122,12 @@ if st.button("PREDICT COLOR", type="primary", use_container_width=True):
 
 # ---- Рендер результата (показывается всегда, если уже считали) ----
 if "result" in st.session_state:
+    
     r = st.session_state["result"]
+    if "Higher confidence" in r.get("confidence", ""):
+        st.success(r["confidence"])
+    else:
+        st.warning(r["confidence"])
     source_note = "Experimentally verified color" if r["verified"] else "Calculated from CIE 1931 + λmax"
 
     html = f"""
