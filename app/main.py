@@ -70,12 +70,12 @@ def build_features(
     return pd.DataFrame([features]).reindex(columns=feature_names)
 
 
-# ── Load everything ───────────────────────────────────────
+# ── Load everything ────────────────────────────────
 model, feature_names = load_artifacts()
 meta   = load_meta()
 raw_df = load_raw_df()
 
-# ── Page config ───────────────────────────────────────────
+# ── Page config ─────────────────────────────────────
 st.set_page_config(
     page_title="Transition Metal Color Predictor",
     page_icon="🎨",
@@ -83,13 +83,12 @@ st.set_page_config(
 )
 
 st.title("🎨 Transition Metal Color Predictor")
-st.title("🎨 Transition Metal Color Predictor")
 st.caption(
     "Predicts the color of transition metal complexes "
     "using ML + Crystal Field Theory"
 )
 
-# ── Dataset statistics ── СЮДА, ДО st.divider()
+# ── Dataset statistics ───────────────────────────────
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("Total Complexes", len(raw_df))
@@ -102,7 +101,7 @@ with col4:
 
 st.divider()
 
-# ── Input widgets ─────────────────────────────────
+# ── Input widgets ─────────────────────────────────────
 c1, c2 = st.columns(2)
 
 with c1:
@@ -118,7 +117,7 @@ with c1:
     )
 
 with c2:
-    ligand = st.selectbox(        # ← ligand определяется здесь
+    ligand = st.selectbox(
         "Ligand",
         list(LIGAND_STRENGTH.keys()),
         index=list(LIGAND_STRENGTH.keys()).index("NH3")
@@ -135,182 +134,6 @@ custom = st.text_input(
 )
 show_debug = st.checkbox("Show debug info", value=False)
 
-# ── Prediction ─────────────────────────────────────
+# ── Prediction ──────────────────────────────────────
 if st.button("PREDICT COLOR", type="primary",
-             use_container_width=True):
-
-    lig_input = custom.strip() if custom.strip() else ligand
-st.caption(
-    "Predicts the color of transition metal complexes "
-    "using ML + Crystal Field Theory"
-)
-# ── Dataset statistics ────────────────────────────
-st.divider()
-
-col1, col2, col3, col4 = st.columns(4)
-
-with col1:
-    st.metric(
-        label="Total Complexes",
-        value=len(raw_df)        
-    )
-with col2:
-    st.metric(
-        label="Metals",
-        value=raw_df["metal"].nunique() 
-    )
-with col3:
-    st.metric(
-        label="Geometries",
-        value=raw_df["geometry"].nunique()  
-    )
-with col4:
-    st.metric(
-        label="Model MAE",
-        value="~64 nm"
-    )
-
-st.divider()
-# ── Prediction ────────────────────────────────────────────
-if st.button("PREDICT COLOR", type="primary",
-             use_container_width=True):
-
-    lig_input = custom.strip() if custom.strip() else ligand
-    X         = build_features(metal, int(ox_state),
-                               lig_input, geometry)
-
-    raw_pred = float(model.predict(X)[0])
-
-    # Convert model output to wavelength in nm
-    if meta.get("target") == "nm":
-        lam = raw_pred
-    elif meta.get("target") == "wavenumber_cm-1":
-        lam = 1e7 / raw_pred
-    else:
-        # Auto-detect: wavenumbers are typically > 5000
-        lam = raw_pred if raw_pred < 1000 else 1e7 / raw_pred
-
-    # Confidence based on training data coverage
-    seen = ((raw_df["metal"] == metal) &
-            (raw_df["ox_state"] == int(ox_state))).any()
-    confidence = (
-        "Higher confidence — metal+oxidation state seen in training"
-        if seen else
-        "Lower confidence — metal+oxidation state not in training data"
-    )
-
-    # Color lookup or CIE calculation
-    key = (metal, int(ox_state), lig_input, geometry)
-    if key in KNOWN_COLORS:
-        perc_hex, abs_hex, perc_name = KNOWN_COLORS[key]
-        verified = True
-    else:
-        perc_hex, abs_hex, perc_name = spectrum_to_hex(
-            lam, fwhm_nm=120.0
-        )
-        verified = False
-
-    st.session_state["result"] = {
-        "metal":     metal,
-        "ox_state":  int(ox_state),
-        "lig_input": lig_input,
-        "geometry":  geometry,
-        "X":         X,
-        "lam":       lam,
-        "perc_hex":  perc_hex,
-        "abs_hex":   abs_hex,
-        "perc_name": perc_name,
-        "abs_label": wavelength_to_absorbed_name(lam),
-        "verified":  verified,
-        "confidence":confidence,
-    }
-
-# ── Result rendering ──────────────────────────────────────
-if "result" in st.session_state:
-    r = st.session_state["result"]
-
-    if "Higher confidence" in r["confidence"]:
-        st.success(r["confidence"])
-    else:
-        st.warning(r["confidence"])
-
-    source_note = (
-        "Experimentally verified"
-        if r["verified"]
-        else "Calculated from CIE 1931 + λmax"
-    )
-
-    html = f"""
-    <div style="border:1px solid #E8E8E8;border-radius:18px;
-                padding:24px 28px;background:#FFFFFF;
-                box-shadow:0 4px 24px rgba(0,0,0,0.08);
-                font-family:sans-serif;">
-      <div style="display:flex;gap:32px;flex-wrap:wrap;">
-
-        <div style="flex:1;min-width:140px;">
-          <div style="color:#999;font-size:11px;
-                      text-transform:uppercase;
-                      letter-spacing:0.8px;">λMAX PREDICTED</div>
-          <div style="font-size:36px;font-weight:900;
-                      color:#111;">{r["lam"]:.0f}
-            <span style="font-size:16px;color:#999;
-                         font-weight:400;">nm</span>
-          </div>
-          <div style="display:inline-block;padding:3px 10px;
-                      border-radius:999px;background:#F0F0F0;
-                      font-size:11px;color:#666;margin-top:4px;">
-            KFold MAE ≈ 64 nm · Metal-held-out ≈ 101 nm
-          </div>
-        </div>
-
-        <div style="flex:1;min-width:140px;">
-          <div style="color:#999;font-size:11px;
-                      text-transform:uppercase;
-                      letter-spacing:0.8px;">ABSORBED</div>
-          <div style="width:56px;height:56px;border-radius:12px;
-                      background:{r["abs_hex"]};
-                      border:2px solid rgba(0,0,0,0.1);
-                      margin:6px 0;"></div>
-          <div style="font-size:18px;font-weight:800;
-                      color:#111;">{r["abs_label"].upper()}</div>
-          <div style="font-size:11px;color:#AAA;
-                      font-family:monospace;">{r["abs_hex"]}</div>
-        </div>
-
-        <div style="flex:1;min-width:140px;">
-          <div style="color:#999;font-size:11px;
-                      text-transform:uppercase;
-                      letter-spacing:0.8px;">PERCEIVED COLOR</div>
-          <div style="width:56px;height:56px;border-radius:12px;
-                      background:{r["perc_hex"]};
-                      border:2px solid rgba(0,0,0,0.1);
-                      margin:6px 0;"></div>
-          <div style="font-size:18px;font-weight:800;
-                      color:#111;">{r["perc_name"].upper()}</div>
-          <div style="font-size:11px;color:#AAA;
-                      font-family:monospace;">{r["perc_hex"]}</div>
-        </div>
-
-      </div>
-
-      <div style="height:1px;background:#EEE;margin:18px 0;">
-      </div>
-
-      <div style="color:#AAA;font-size:11px;">
-        [{r["metal"]}({r["lig_input"]})]
-        <sup>{r["ox_state"]}+</sup> ·
-        {r["geometry"]} · {source_note} ·
-        91 complexes · ExtraTrees
-      </div>
-    </div>
-    """
-    st.components.v1.html(html, height=280, scrolling=False)
-
-    if show_debug:
-        with st.expander("Debug: features → model",
-                         expanded=False):
-            st.dataframe(
-                r["X"],
-                use_container_width=True,
-                hide_index=True
-            )
+             
