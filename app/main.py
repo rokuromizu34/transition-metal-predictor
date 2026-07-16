@@ -9,13 +9,12 @@ import joblib
 import pandas as pd
 import streamlit as st
 
-# Import from single source of truth
 from constants import (
     LIGAND_STRENGTH, GEOMETRY_CN, GEOMETRY_FACTOR,
     METAL_Z, D_ELECTRONS, parse_ligand_strength
 )
 from color_utils import (
-    KNOWN_COLORS, spectrum_to_hex, 
+    KNOWN_COLORS, spectrum_to_hex,
     wavelength_to_absorbed_name
 )
 
@@ -43,9 +42,9 @@ def load_raw_df():
 
 
 def build_features(
-    metal: str, 
-    ox: int, 
-    ligand_str: str, 
+    metal: str,
+    ox: int,
+    ligand_str: str,
     geometry: str
 ) -> pd.DataFrame:
     """
@@ -54,7 +53,7 @@ def build_features(
     """
     lig_strength = parse_ligand_strength(ligand_str)
     geom_factor  = GEOMETRY_FACTOR.get(geometry, 1.0)
-    
+
     features = {
         'metal_Z':          METAL_Z.get(metal, 26),
         'ox_state':         ox,
@@ -67,18 +66,16 @@ def build_features(
         'is_tetrahedral':   int(geometry == 'tetrahedral'),
         'is_square_planar': int(geometry == 'square_planar'),
     }
-    
-    return pd.DataFrame([features]).reindex(
-        columns=feature_names
-    )
+
+    return pd.DataFrame([features]).reindex(columns=feature_names)
 
 
-# Load everything
+# ── Load everything ───────────────────────────────────────
 model, feature_names = load_artifacts()
 meta   = load_meta()
 raw_df = load_raw_df()
 
-# ── Page config ──────────────────────────────────────────
+# ── Page config ───────────────────────────────────────────
 st.set_page_config(
     page_title="Transition Metal Color Predictor",
     page_icon="🎨",
@@ -97,61 +94,62 @@ c1, c2 = st.columns(2)
 
 with c1:
     metal = st.selectbox(
-        "Metal", 
+        "Metal",
         list(METAL_Z.keys()),
         index=list(METAL_Z.keys()).index("Co")
     )
     ox_state = st.number_input(
-        "Oxidation state", 
-        min_value=1, max_value=9, 
+        "Oxidation state",
+        min_value=1, max_value=9,
         value=3, step=1
     )
 
 with c2:
     ligand = st.selectbox(
-        "Ligand", 
+        "Ligand",
         list(LIGAND_STRENGTH.keys()),
         index=list(LIGAND_STRENGTH.keys()).index("NH3")
     )
     geometry = st.selectbox(
-        "Geometry", 
-        list(GEOMETRY_CN.keys()), 
+        "Geometry",
+        list(GEOMETRY_CN.keys()),
         index=0
     )
 
 custom     = st.text_input(
-    "Mixed ligands (e.g. NH3*4+en*2)", 
+    "Mixed ligands (e.g. NH3*4+en*2)",
     value=""
 )
 show_debug = st.checkbox("Show debug info", value=False)
 
 # ── Prediction ────────────────────────────────────────────
-if st.button("PREDICT COLOR", type="primary", 
+if st.button("PREDICT COLOR", type="primary",
              use_container_width=True):
-    
+
     lig_input = custom.strip() if custom.strip() else ligand
-    X         = build_features(metal, int(ox_state), 
+    X         = build_features(metal, int(ox_state),
                                lig_input, geometry)
-    
-    raw_pred  = float(model.predict(X)[0])
-    # ЗАМЕНИ НА ЭТО:
+
+    raw_pred = float(model.predict(X)[0])
+
+    # Convert model output to wavelength in nm
     if meta.get("target") == "nm":
-        lam = pred  # уже в нанометрах
+        lam = raw_pred
     elif meta.get("target") == "wavenumber_cm-1":
-        lam = 1e7 / pred  # конвертируем
+        lam = 1e7 / raw_pred
     else:
-    # автоопределение по величине числа
-        lam = pred if pred < 1000 else 1e7 / pred
-    
+        # Auto-detect: wavenumbers are typically > 5000
+        lam = raw_pred if raw_pred < 1000 else 1e7 / raw_pred
+
     # Confidence based on training data coverage
-    seen = ((raw_df["metal"] == metal) & 
+    seen = ((raw_df["metal"] == metal) &
             (raw_df["ox_state"] == int(ox_state))).any()
     confidence = (
         "Higher confidence — metal+oxidation state seen in training"
         if seen else
         "Lower confidence — metal+oxidation state not in training data"
     )
-    
+
     # Color lookup or CIE calculation
     key = (metal, int(ox_state), lig_input, geometry)
     if key in KNOWN_COLORS:
@@ -162,37 +160,37 @@ if st.button("PREDICT COLOR", type="primary",
             lam, fwhm_nm=120.0
         )
         verified = False
-    
+
     st.session_state["result"] = {
-        "metal":    metal,
-        "ox_state": int(ox_state),
-        "lig_input":lig_input,
-        "geometry": geometry,
-        "X":        X,
-        "lam":      lam,
-        "perc_hex": perc_hex,
-        "abs_hex":  abs_hex,
-        "perc_name":perc_name,
-        "abs_label":wavelength_to_absorbed_name(lam),
-        "verified": verified,
+        "metal":     metal,
+        "ox_state":  int(ox_state),
+        "lig_input": lig_input,
+        "geometry":  geometry,
+        "X":         X,
+        "lam":       lam,
+        "perc_hex":  perc_hex,
+        "abs_hex":   abs_hex,
+        "perc_name": perc_name,
+        "abs_label": wavelength_to_absorbed_name(lam),
+        "verified":  verified,
         "confidence":confidence,
     }
 
 # ── Result rendering ──────────────────────────────────────
 if "result" in st.session_state:
     r = st.session_state["result"]
-    
+
     if "Higher confidence" in r["confidence"]:
         st.success(r["confidence"])
     else:
         st.warning(r["confidence"])
-    
+
     source_note = (
-        "Experimentally verified" 
-        if r["verified"] 
+        "Experimentally verified"
+        if r["verified"]
         else "Calculated from CIE 1931 + λmax"
     )
-    
+
     html = f"""
     <div style="border:1px solid #E8E8E8;border-radius:18px;
                 padding:24px 28px;background:#FFFFFF;
@@ -251,19 +249,19 @@ if "result" in st.session_state:
 
       <div style="color:#AAA;font-size:11px;">
         [{r["metal"]}({r["lig_input"]})]
-        <sup>{r["ox_state"]}+</sup> · 
-        {r["geometry"]} · {source_note} · 
+        <sup>{r["ox_state"]}+</sup> ·
+        {r["geometry"]} · {source_note} ·
         91 complexes · ExtraTrees
       </div>
     </div>
     """
     st.components.v1.html(html, height=280, scrolling=False)
-    
+
     if show_debug:
-        with st.expander("Debug: features → model", 
+        with st.expander("Debug: features → model",
                          expanded=False):
             st.dataframe(
-                r["X"], 
-                use_container_width=True, 
+                r["X"],
+                use_container_width=True,
                 hide_index=True
             )
