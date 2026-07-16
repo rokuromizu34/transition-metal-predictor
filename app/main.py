@@ -135,5 +135,5 @@ custom = st.text_input(
 show_debug = st.checkbox("Show debug info", value=False)
 
 # ── Prediction ──────────────────────────────────────
-if st.button("PREDICT COLOR", type="primary",
+if st.button("PREDICT COLOR", type="primary",)
              
