@@ -134,9 +134,14 @@ if st.button("PREDICT COLOR", type="primary",
                                lig_input, geometry)
     
     raw_pred  = float(model.predict(X)[0])
-    lam = (1e7 / raw_pred 
-           if meta.get("target") == "wavenumber_cm-1" 
-           else raw_pred)
+    # ЗАМЕНИ НА ЭТО:
+    if meta.get("target") == "nm":
+        lam = pred  # уже в нанометрах
+    elif meta.get("target") == "wavenumber_cm-1":
+        lam = 1e7 / pred  # конвертируем
+    else:
+    # автоопределение по величине числа
+        lam = pred if pred < 1000 else 1e7 / pred
     
     # Confidence based on training data coverage
     seen = ((raw_df["metal"] == metal) & 
