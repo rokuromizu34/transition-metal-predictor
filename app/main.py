@@ -83,6 +83,63 @@ st.set_page_config(
 )
 
 st.title("🎨 Transition Metal Color Predictor")
+st.title("🎨 Transition Metal Color Predictor")
+st.caption(
+    "Predicts the color of transition metal complexes "
+    "using ML + Crystal Field Theory"
+)
+
+# ── Dataset statistics ── СЮДА, ДО st.divider()
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    st.metric("Total Complexes", len(raw_df))
+with col2:
+    st.metric("Metals", raw_df["metal"].nunique())
+with col3:
+    st.metric("Geometries", raw_df["geometry"].nunique())
+with col4:
+    st.metric("Model MAE", "~64 nm")
+
+st.divider()
+
+# ── Input widgets ─────────────────────────────────
+c1, c2 = st.columns(2)
+
+with c1:
+    metal = st.selectbox(
+        "Metal",
+        list(METAL_Z.keys()),
+        index=list(METAL_Z.keys()).index("Co")
+    )
+    ox_state = st.number_input(
+        "Oxidation state",
+        min_value=1, max_value=9,
+        value=3, step=1
+    )
+
+with c2:
+    ligand = st.selectbox(        # ← ligand определяется здесь
+        "Ligand",
+        list(LIGAND_STRENGTH.keys()),
+        index=list(LIGAND_STRENGTH.keys()).index("NH3")
+    )
+    geometry = st.selectbox(
+        "Geometry",
+        list(GEOMETRY_CN.keys()),
+        index=0
+    )
+
+custom = st.text_input(
+    "Mixed ligands (e.g. NH3*4+en*2)",
+    value=""
+)
+show_debug = st.checkbox("Show debug info", value=False)
+
+# ── Prediction ─────────────────────────────────────
+if st.button("PREDICT COLOR", type="primary",
+             use_container_width=True):
+
+    lig_input = custom.strip() if custom.strip() else ligand
 st.caption(
     "Predicts the color of transition metal complexes "
     "using ML + Crystal Field Theory"
