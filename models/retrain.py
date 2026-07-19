@@ -6,10 +6,7 @@ from pathlib import Path
 import pandas as pd
 import joblib
 from sklearn.ensemble import ExtraTreesRegressor
-from sklearn.model_selection import (
-    cross_val_score, GroupKFold
-)
-from sklearn.metrics import mean_absolute_error
+from sklearn.model_selection import cross_val_score, KFold
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -37,19 +34,18 @@ model = ExtraTreesRegressor(
     n_jobs=-1
 )
 
-# Cross-validation by source (honest evaluation)
-groups = raw["source"]
-cv     = GroupKFold(n_splits=5)
+# Regular KFold (all data from single literature source,
+# so GroupKFold by source is not meaningful here)
+cv = KFold(n_splits=5, shuffle=True, random_state=42)
 
 scores = cross_val_score(
     model, X, y,
     cv=cv,
-    groups=groups,
     scoring="neg_mean_absolute_error",
     n_jobs=-1
 )
 
-print(f"\nGroupKFold CV Results:")
+print(f"\n5-Fold CV Results:")
 print(f"  MAE: {-scores.mean():.1f} ± {scores.std():.1f} nm")
 
 # Train final model on all data
@@ -70,11 +66,10 @@ for name, imp in sorted(
 print("\nSaving model...")
 joblib.dump(model, ROOT / "models/best_ml_model.pkl")
 
-# Update meta
 meta = {
     "target": "nm",
     "n_complexes": len(raw),
-    "mae_groupkfold": round(-scores.mean(), 1),
+    "mae_kfold": round(-scores.mean(), 1),
     "metals": sorted(raw["metal"].unique().tolist()),
     "model": "ExtraTreesRegressor",
     "n_estimators": 200

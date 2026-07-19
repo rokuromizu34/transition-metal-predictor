@@ -97,7 +97,7 @@ with col2:
 with col3:
     st.metric("Geometries", raw_df["geometry"].nunique())
 with col4:
-    st.metric("Model MAE", "~64 nm")
+    st.metric("Model MAE", "~68 nm")
 
 st.divider()
 
@@ -219,7 +219,7 @@ if "result" in st.session_state:
           <div style="display:inline-block;padding:3px 10px;
                       border-radius:999px;background:#F0F0F0;
                       font-size:11px;color:#666;margin-top:4px;">
-            KFold MAE ≈ 64 nm · Metal-held-out ≈ 101 nm
+            KFold MAE ≈ 68 nm · Metal-held-out ≈ 93 nm
           </div>
         </div>
 

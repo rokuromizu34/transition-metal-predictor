@@ -160,6 +160,18 @@ Distributed under the MIT License.
 See `LICENSE` for more information.
 
 ---
+## 📊 Data Quality
+
+The dataset underwent a cleaning process to remove duplicate 
+and conflicting entries:
+
+- **Original entries:** 107
+- **Duplicates removed:** 14 (exact duplicates + conflicting 
+  values resolved by keeping original literature values)
+- **Final clean dataset:** 93 unique transition metal complexes
+
+This ensures no data leakage during cross-validation and 
+consistent, non-contradictory training signal for the model.
 
 ## 🙏 Acknowledgements
 

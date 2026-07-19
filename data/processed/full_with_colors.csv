@@ -90,3 +90,5 @@ complex_name,metal,ox_state,ligands,geometry,lambda_max,color,solvent,source,per
 [Ti(H2O)6]3+,Ti,3,H2O,octahedral,493,violet,H2O,Miessler_Tarr_2014,red
 [TiCl6]3-,Ti,3,Cl,octahedral,530,green,H2O,Miessler_Tarr_2014,purple
 [TiF6]3-,Ti,3,F,octahedral,460,pale,H2O,Miessler_Tarr_2014,orange
+[Fe(phen)3]2+,Fe,2,phen,octahedral,510,red,H2O,Miessler_Tarr_2014,purple
+[Fe(bipy)3]2+,Fe,2,bipy,octahedral,520,red,H2O,Miessler_Tarr_2014,purple
