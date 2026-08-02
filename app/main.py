@@ -70,12 +70,12 @@ def build_features(
     return pd.DataFrame([features]).reindex(columns=feature_names)
 
 
-# ── Load everything ────────────────────────────────
+# ── Load everything ──────────────────────────────────────────────────
 model, feature_names = load_artifacts()
 meta   = load_meta()
 raw_df = load_raw_df()
 
-# ── Page config ─────────────────────────────────────
+# ── Page config ───────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Transition Metal Color Predictor",
     page_icon="🎨",
@@ -88,7 +88,7 @@ st.caption(
     "using ML + Crystal Field Theory"
 )
 
-# ── Dataset statistics ───────────────────────────────
+# ── Dataset statistics ───────────────────────────────────────────────
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("Total Complexes", len(raw_df))
@@ -101,7 +101,7 @@ with col4:
 
 st.divider()
 
-# ── Input widgets ─────────────────────────────────────
+# ── Input widgets ────────────────────────────────────────────────────
 c1, c2 = st.columns(2)
 
 with c1:
@@ -134,7 +134,7 @@ custom = st.text_input(
 )
 show_debug = st.checkbox("Show debug info", value=False)
 
-# ── Prediction ──────────────────────────────────────
+# ── Prediction ────────────────────────────────────────────────────────
 if st.button("PREDICT COLOR", type="primary",
              use_container_width=True):
 
@@ -152,13 +152,34 @@ if st.button("PREDICT COLOR", type="primary",
     else:
         lam = raw_pred if raw_pred < 1000 else 1e7 / raw_pred
 
-    seen = ((raw_df["metal"] == metal) &
-            (raw_df["ox_state"] == int(ox_state))).any()
-    confidence = (
-        "Higher confidence — metal+oxidation state seen in training"
-        if seen else
-        "Lower confidence — metal+oxidation state not in training data"
-    )
+    # NOTE (fixed): previously this only checked whether the metal +
+    # oxidation state pair appeared anywhere in training, ignoring
+    # geometry entirely. That let chemically implausible combinations
+    # (e.g. Cr(III), which is octahedral in 100% of the training data)
+    # get labeled "Higher confidence" even when paired with a geometry
+    # (e.g. square_planar) that metal+oxidation state has NEVER been
+    # seen with. Now the check requires metal + oxidation state +
+    # geometry to all match a real training example together.
+    seen = (
+        (raw_df["metal"] == metal) &
+        (raw_df["ox_state"] == int(ox_state)) &
+        (raw_df["geometry"] == geometry)
+    ).any()
+
+    if seen:
+        confidence = "Higher confidence — metal + oxidation state + geometry all seen in training"
+    else:
+        # Distinguish "totally unseen metal/oxidation state" from
+        # "seen metal/oxidation state, but never with this geometry",
+        # since the latter is a more specific and useful warning.
+        metal_ox_seen = (
+            (raw_df["metal"] == metal) &
+            (raw_df["ox_state"] == int(ox_state))
+        ).any()
+        if metal_ox_seen:
+            confidence = f"Lower confidence — {metal}({ox_state}+) was seen in training, but never with {geometry} geometry"
+        else:
+            confidence = f"Lower confidence — {metal}({ox_state}+) was not seen in training at all"
 
     key = (metal, int(ox_state), lig_input, geometry)
     if key in KNOWN_COLORS:
@@ -185,7 +206,7 @@ if st.button("PREDICT COLOR", type="primary",
         "confidence":confidence,
     }
 
-# ── Result rendering ──────────────────────────────────
+# ── Result rendering ─────────────────────────────────────────────────
 if "result" in st.session_state:
     r = st.session_state["result"]
 
