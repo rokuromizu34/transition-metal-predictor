@@ -73,11 +73,11 @@ App will open at http://localhost:8501
 
 | Parameter | Current | Target |
 |-----------|---------|--------|
-| Dataset size | ~30 elements | 15,000+ materials |
-| Features | ~5 | 130+ (MAGPIE descriptors) |
-| Model type | In development | XGBoost |
-| R² score | TBD | ~0.94 |
-| MAE | TBD | ~0.21 eV |
+| Dataset size | 93 complexes | 150-200 complexes |
+| Features | 10 | 15+ (incl. quantum-chemical descriptors) |
+| Model type | ExtraTreesRegressor | XGBoost / ensemble comparison |
+| KFold MAE | 68.4 nm | < 50 nm |
+| Leave-one-metal-out MAE | 116.0 nm (honest metric) | < 90 nm |
 
 ---
 
@@ -125,8 +125,8 @@ priority for the next round of data collection.
 
 ##  Roadmap
 
-- [ ] Connect Materials Project API (10,000+ materials)
-- [ ] Advanced feature engineering (MAGPIE descriptors)
+- [ ] Expand dataset via manual literature curation (target: 150-200 complexes, prioritizing underrepresented metals Mn/V/Ti)
+- [ ] Advanced feature engineering (quantum-chemical descriptors, e.g. HOMO-LUMO gap via a lightweight method such as xtb)
 - [ ] XGBoost model with cross-validation
 - [ ] SHAP explainability for predictions
 - [ ] Periodic table visualization
@@ -171,9 +171,14 @@ We are particularly interested in:
 
 | Source | Materials | Status |
 |--------|-----------|--------|
-| Manual collection | ~30 elements | ✅ Current |
-| Materials Project API | 150,000+ | 🔄 Planned |
-| AFLOW database | 3,500,000+ | 🔄 Planned |
+| Miessler & Tarr, *Inorganic Chemistry* (2014) | 93 complexes | ✅ Current |
+| Housecroft & Sharpe / Shriver & Atkins textbook tables | ~50-100 additional complexes | 🔄 Planned |
+
+> **Note:** Materials Project and AFLOW are DFT databases of solid-state
+> inorganic materials (band gaps, formation energies) and do not contain
+> molecular-complex UV-Vis spectral data (λmax), so they are not usable
+> sources for expanding this dataset. Expansion requires manual curation
+> from coordination-chemistry literature instead.
 
 ---
 
