@@ -3,10 +3,14 @@ Transition Metal Color Predictor - v6
 Glowing arc + ONE exact color block
 """
 
+import sys
 import streamlit as st
 import joblib
 import pandas as pd
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).parent.parent / 'models'))
+from color_lookup import ColorLookup, complementary_color
 
 st.set_page_config(page_title="Metal Color Predictor", page_icon="🧪", layout="centered")
 
@@ -71,43 +75,17 @@ st.markdown("""
 model_path = Path(__file__).parent.parent / 'models' / 'best_ml_model.pkl'
 model = joblib.load(model_path)
 
-# === EXACT COLORS matching real solutions ===
-def exact_observed_color(nm):
-    """Returns (name, hex) matching REAL solution colors"""
-    if nm < 380: return "colorless", "#E8E8E8"
-    elif nm < 410: return "greenish-yellow", "#B8B84B"
-    elif nm < 430: return "yellow", "#D4B830"
-    elif nm < 450: return "yellow", "#D4B830"
-    elif nm < 490: return "yellow-orange", "#D49930"
-    elif nm < 510: return "orange", "#CC7722"
-    elif nm < 530: return "red", "#A83838"
-    elif nm < 545: return "pink", "#C06080"
-    elif nm < 560: return "purple", "#6B3FA0"
-    elif nm < 580: return "blue-violet", "#4B40A8"
-    elif nm < 600: return "blue", "#2860A8"
-    elif nm < 630: return "blue-green", "#287878"
-    elif nm < 660: return "green", "#388038"
-    elif nm < 700: return "green", "#4B8B3B"
-    elif nm < 750: return "yellow-green", "#808828"
-    elif nm < 800: return "pale green", "#90A860"
-    elif nm < 850: return "pale yellow-green", "#A0A850"
-    else: return "colorless", "#E8E8E8"
-
-def exact_absorbed_color(nm):
-    """Returns (name, hex) of the light being absorbed"""
-    if nm < 380: return "UV", "#3a0060"
-    elif nm < 430: return "violet", "#6B2D8B"
-    elif nm < 470: return "blue", "#2050A0"
-    elif nm < 490: return "yellow-orange", "#C8842B"
-    elif nm < 500: return "blue-green", "#188070"
-    elif nm < 530: return "green", "#288828"
-    elif nm < 560: return "yellow-green", "#688820"
-    elif nm < 580: return "yellow", "#B8A020"
-    elif nm < 610: return "orange", "#C06818"
-    elif nm < 660: return "red-orange", "#B03818"
-    elif nm < 730: return "red", "#901818"
-    elif nm < 780: return "deep red", "#701010"
-    else: return "IR", "#400808"
+# === Color: nearest-neighbor lookup grounded in the real training data ===
+# NOTE: The old version of this app used a hand-tuned nm -> color range
+# table that matched the project's own 93-complex dataset in only ~16%
+# of cases when checked. It has been replaced with a lookup against the
+# real recorded color of whichever training complex has the closest
+# lambda_max to the prediction, so every displayed color is traceable to
+# an actual literature observation. See models/color_lookup.py for the
+# full explanation, including why lambda_max alone can't fully
+# determine color (59/93 training complexes share an exact lambda_max
+# with another complex of a DIFFERENT color).
+color_lookup = ColorLookup(Path(__file__).parent.parent / 'data' / 'raw' / 'complexes_raw.csv')
 
 def make_spectrum(predicted_nm):
     def wl_rgb(nm):
@@ -164,6 +142,13 @@ D_ELEC = {
     ('Ni',2):8,('Ni',3):7,('Cu',1):10,('Cu',2):9,
 }
 
+# Real (metal, ox_state) -> count of training examples, computed from
+# data/raw/complexes_raw.csv. Used to restrict the UI to combinations
+# the model actually learned from, instead of every combination that's
+# merely chemically computable via D_ELEC's formula.
+_raw_for_coverage = pd.read_csv(Path(__file__).parent.parent / 'data' / 'raw' / 'complexes_raw.csv')
+TRAINING_COVERAGE = _raw_for_coverage.groupby(['metal', 'ox_state']).size().to_dict()
+
 # ===== HERO =====
 st.markdown("""
 <div class="hero-container">
@@ -183,7 +168,17 @@ st.markdown("### ⚙️ Parameters")
 col1, col2 = st.columns(2)
 with col1:
     metal_choice = st.selectbox("Metal", list(METALS.keys()), index=5)
-    ox_state = st.selectbox("Oxidation State", [2, 3], index=1)
+    metal_sym_preview, _ = METALS[metal_choice]
+    # Only offer oxidation states the model actually saw real training
+    # examples for -- D_ELEC previously included some combos (e.g. Ni:3)
+    # that are chemically computable by formula but have ZERO real
+    # complexes in the training data, causing the model to silently
+    # extrapolate into nonsense for a state it has never seen.
+    valid_ox_states = sorted({ox for (sym, ox) in TRAINING_COVERAGE if sym == metal_sym_preview})
+    ox_state = st.selectbox("Oxidation State", valid_ox_states, index=len(valid_ox_states) - 1)
+    n_examples = TRAINING_COVERAGE.get((metal_sym_preview, ox_state), 0)
+    if n_examples <= 2:
+        st.caption(f"⚠️ Only {n_examples} training example(s) for {metal_sym_preview}({ox_state}+) -- prediction is a rough extrapolation.")
 with col2:
     ligand_choice = st.selectbox("Ligand", list(LIGANDS.keys()), index=9)
     geom_choice = st.selectbox("Geometry", list(GEOMETRIES.keys()))
@@ -210,8 +205,8 @@ if predict:
     }])
 
     pred = max(300, min(900, model.predict(features)[0]))
-    abs_name, abs_hex = exact_absorbed_color(pred)
-    obs_name, obs_hex = exact_observed_color(pred)
+    obs_name, obs_hex, nearest_complex, nearest_nm = color_lookup.nearest(pred)
+    abs_name, abs_hex = complementary_color(obs_hex)
 
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
@@ -228,7 +223,12 @@ if predict:
     st.markdown("<br>", unsafe_allow_html=True)
 
     # === ONE COLOR BLOCK — EXACT COLOR ===
-    text_col = "#000" if obs_name in ["yellow","deep yellow","greenish-yellow","orange","colorless","pale green-yellow","yellow-green"] else "#fff"
+    # Pick black or white text based on the actual background luminance,
+    # rather than a hardcoded color-name list (which broke whenever color
+    # labels changed, e.g. "pale-yellow" vs the old "pale green-yellow").
+    _r, _g, _b = int(obs_hex[1:3], 16), int(obs_hex[3:5], 16), int(obs_hex[5:7], 16)
+    _luminance = 0.299 * _r + 0.587 * _g + 0.114 * _b
+    text_col = "#000" if _luminance > 150 else "#fff"
 
     st.markdown(f"""
     <div style="text-align:center; margin:20px 0;">
@@ -253,7 +253,10 @@ if predict:
         </div>
         <p style="color:#555; font-size:13px;">
             Absorbs <strong style="color:{abs_hex};">{abs_name}</strong> light at {pred:.0f} nm
-            → you see <strong>{obs_name}</strong>
+        </p>
+        <p style="color:#555; font-size:12px; margin-top:-6px;">
+            Closest known example: <strong>{nearest_complex}</strong> (λmax = {nearest_nm:.0f} nm, real recorded color).
+            A single λmax doesn't always fully determine color, so this is the nearest real match, not a guarantee.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -295,8 +298,8 @@ if predict:
 st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 st.markdown("""
 <div class="footer">
-    <strong>Random Forest Model</strong> · MAE = 40 nm · 91 complexes<br>
-    Data: Miessler & Tarr, Inorganic Chemistry (2014)<br><br>
+    <strong>ExtraTreesRegressor</strong> · KFold MAE = 68.4 nm · Leave-one-metal-out MAE = 116.0 nm · 93 complexes<br>
+    Data: Miessler & Tarr, Inorganic Chemistry (2014) · Colors matched to nearest real training example<br><br>
     <a href="https://github.com/rokuromizu34/transition-metal-predictor"
        style="color:#FF6B35;">GitHub</a><br><br>
     Built by Olga · Computational Chemistry × ML
