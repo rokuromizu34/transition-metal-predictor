@@ -1,0 +1,4 @@
+model,kfold_mae,holdout_mae
+ExtraTrees (200 trees),68.4,116.0
+"Ridge (alpha=1.0, scaled)",75.2,101.9
+LinearRegression (scaled),77.4,107.2
