@@ -111,6 +111,24 @@ KNOWN_COLORS = {
     ('Ti', 3, 'H2O', 'octahedral'):    ('#9B59B6', '#4CBB17', 'violet'),
     ('Co', 2, 'Cl',  'tetrahedral'):   ('#1E90FF', '#FF6B00', 'blue'),
     ('Cu', 2, 'NH3', 'square_planar'): ('#1464A0', '#E8A838', 'deep blue'),
+    # d2 комплекс с двумя d-d переходами (~400 нм и ~570-590 нм) —
+    # одногауссова модель spectrum_to_hex() видит только один пик,
+    # поэтому даёт синий вместо реального сине-зелёного/зелёного
+    ('V', 3, 'H2O', 'octahedral'):     ('#4A9B6E', '#B33C6E', 'green'),
+    # MLCT-переход (не d-d!), полоса шире и асимметричнее, чем узкий
+    # гауссиан модели — наивная CIE-математика для узкой полосы у ~500 нм
+    # даёт пурпурный (отражение R+B), реальный ferroin — красный
+    ('Fe', 2, 'phen', 'octahedral'):   ('#B22222', '#2E8B57', 'deep red'),
+    # MLCT, идентичная природа ошибки, что и Fe/phen — bipy тоже сильный
+    # π-акцептор → тот же артефакт наивной комплементарной CIE-математики
+    ('Fe', 2, 'bipy', 'octahedral'):   ('#B22222', '#2E8B57', 'red'),
+    # d3-конфигурация, лиловый/лавандовый цвет по литературе — отличается
+    # от уже добавленного V3+ (d2, зелёный), легко спутать при одном λmax
+    ('V', 2, 'H2O', 'octahedral'):     ('#9B7EBD', '#C8D96F', 'violet'),
+    # [Co(H2O)6]3+ — фиолетовый; слабое поле H2O даёт большую λ поглощения
+    ('Co', 3, 'H2O', 'octahedral'):    ('#9B59B6', '#4CBB17', 'violet'),
+    # [Co(CN)6]3- — жёлтый; сильное поле CN- даёт малую λ поглощения
+    ('Co', 3, 'CN',  'octahedral'):    ('#F4D03F', '#7D3C98', 'yellow'),
 }
 def _rgb_to_color_name(hex_color: str) -> str:
     """RGB hex → точное название цвета через HSV."""
@@ -188,6 +206,11 @@ def _rgb_to_color_name(hex_color: str) -> str:
         base = "pink" if sat < 0.55 else "red-pink"
 
     return prefix + base
+
+def hex_to_color_name(hex_color: str) -> str:
+    """Публичная обёртка над _rgb_to_color_name — название цвета по hex."""
+    return _rgb_to_color_name(hex_color)
+
 
 def spectrum_to_hex(lambda_max_nm: float, fwhm_nm: float = 120.0):
     """

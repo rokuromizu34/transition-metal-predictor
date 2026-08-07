@@ -15,7 +15,7 @@ from constants import (
 )
 from color_utils import (
     KNOWN_COLORS, spectrum_to_hex,
-    wavelength_to_absorbed_name
+    wavelength_to_absorbed_name, hex_to_color_name
 )
 
 ROOT          = Path(__file__).resolve().parents[1]
@@ -201,7 +201,17 @@ if st.button("PREDICT COLOR", type="primary",
         "perc_hex":  perc_hex,
         "abs_hex":   abs_hex,
         "perc_name": perc_name,
-        "abs_label": wavelength_to_absorbed_name(lam),
+        # BUG FIX: раньше здесь всегда стояло wavelength_to_absorbed_name(lam) —
+        # оно смотрит только на "сырой" λmax модели и не знает про ручное
+        # переопределение цвета через KNOWN_COLORS. Из-за этого для
+        # verified-комплексов текст под квадратом ABSORBED мог не совпадать
+        # с реальным показанным цветом (напр. V3+/H2O: квадрат magenta,
+        # подпись "YELLOW"). Теперь для verified берём название по
+        # фактическому abs_hex, а по длине волны — только для неверифицированных.
+        "abs_label": (
+            hex_to_color_name(abs_hex) if verified
+            else wavelength_to_absorbed_name(lam)
+        ),
         "verified":  verified,
         "confidence":confidence,
     }
