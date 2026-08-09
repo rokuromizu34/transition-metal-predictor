@@ -107,6 +107,17 @@ print(f"Overall leave-one-metal-out MAE (nm): {overall_mae:.1f}")
 if "mae_kfold" in meta:
     print(f"(for comparison, retrain.py's KFold MAE: {meta['mae_kfold']} nm)")
 
+# ── Persist honest metric into model_meta.pkl ────────────────────────
+# BUG FIX: main.py used to show a hardcoded "Metal-held-out ≈ 93 nm"
+# string in its HTML badge, independent of this script's real output.
+# That drifted out of sync after retraining (this run: 117.3 nm, not
+# 93 nm) — anyone comparing the live app to the report would see a
+# mismatch. Now this script writes the real number back into
+# model_meta.pkl, and main.py reads it dynamically instead.
+meta["mae_metal_holdout"] = round(overall_mae, 1)
+joblib.dump(meta, meta_path)
+print(f"Saved mae_metal_holdout={meta['mae_metal_holdout']} into {meta_path}")
+
 # ── Save results CSV ──────────────────────────────────────────────────
 out_csv = ROOT / "data/processed/metal_holdout_results.csv"
 results_df.to_csv(out_csv, index=False)

@@ -88,6 +88,85 @@ st.caption(
     "using ML + Crystal Field Theory"
 )
 
+# ── Custom visual styling ────────────────────────────────────────────
+# Тёмная подложка + светящаяся полоса сверху + "стеклянные" input-виджеты
+# (Metal/Ligand/Oxidation state/Geometry/кнопка). Карточку результата
+# (белый div ниже, в st.components.v1.html) НЕ трогаем — как просили.
+st.markdown("""
+<style>
+/* тёмный градиентный фон под всё приложение, для контраста стекла */
+.stApp {
+    background: radial-gradient(ellipse 80% 50% at 50% -10%,
+                rgba(255,170,60,0.18), transparent 60%),
+                linear-gradient(180deg, #0B0B0E 0%, #050506 100%);
+}
+
+/* светящаяся анимированная полоса сверху страницы */
+.top-glow-bar {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 3px;
+    background: linear-gradient(90deg, transparent,
+                #FFB347 20%, #FFD84A 50%, #FFB347 80%, transparent);
+    box-shadow: 0 0 16px 3px rgba(255,180,60,0.75),
+                0 0 40px 10px rgba(255,140,20,0.35);
+    z-index: 999999;
+    animation: glow-pulse 3s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+    0%, 100% { opacity: 0.65; }
+    50%      { opacity: 1; }
+}
+
+/* заголовок/подпись — светлый текст на тёмном фоне */
+h1, .stCaption, p, label { color: #F0EEE8 !important; }
+
+/* стеклянная кнопка PREDICT COLOR */
+div[data-testid="stButton"] button {
+    background: rgba(255,255,255,0.07) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    color: #FFF !important;
+    border-radius: 14px !important;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25),
+                inset 0 1px 0 rgba(255,255,255,0.12);
+    transition: all 0.25s ease;
+}
+div[data-testid="stButton"] button:hover {
+    background: rgba(255,180,60,0.18) !important;
+    box-shadow: 0 4px 30px rgba(255,180,60,0.35),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+/* стеклянные Metal / Ligand / Geometry selectbox'ы */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    background: rgba(255,255,255,0.06) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    border-radius: 12px !important;
+    color: #FFF !important;
+}
+
+/* стеклянные Oxidation state / Mixed ligands поля ввода */
+div[data-testid="stNumberInput"] input,
+div[data-testid="stTextInput"] input {
+    background: rgba(255,255,255,0.06) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    border-radius: 12px !important;
+    color: #FFF !important;
+}
+div[data-testid="stNumberInput"] button {
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.16) !important;
+    color: #FFF !important;
+}
+</style>
+<div class="top-glow-bar"></div>
+""", unsafe_allow_html=True)
+
 # ── Dataset statistics ───────────────────────────────────────────────
 col1, col2, col3, col4 = st.columns(4)
 with col1:
@@ -97,7 +176,7 @@ with col2:
 with col3:
     st.metric("Geometries", raw_df["geometry"].nunique())
 with col4:
-    st.metric("Model MAE", "~68 nm")
+    st.metric("Model MAE", f"~{meta.get('mae_kfold', 68):.0f} nm")
 
 st.divider()
 
@@ -250,7 +329,7 @@ if "result" in st.session_state:
           <div style="display:inline-block;padding:3px 10px;
                       border-radius:999px;background:#F0F0F0;
                       font-size:11px;color:#666;margin-top:4px;">
-            KFold MAE ≈ 68 nm · Metal-held-out ≈ 93 nm
+            KFold MAE ≈ {meta.get('mae_kfold', '?')} nm · Metal-held-out ≈ {meta.get('mae_metal_holdout', '?')} nm
           </div>
         </div>
 
