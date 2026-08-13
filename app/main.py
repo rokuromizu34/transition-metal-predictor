@@ -78,11 +78,10 @@ raw_df = load_raw_df()
 # ── Page config ───────────────────────────────────────────────────────
 st.set_page_config(
     page_title="Transition Metal Color Predictor",
-    page_icon="🎨",
     layout="centered"
 )
 
-st.title("🎨 Transition Metal Color Predictor")
+st.title("Transition Metal Color Predictor")
 st.caption(
     "Predicts the color of transition metal complexes "
     "using ML + Crystal Field Theory"
@@ -94,22 +93,16 @@ st.caption(
 # (белый div ниже, в st.components.v1.html) НЕ трогаем — как просили.
 st.markdown("""
 <style>
-/* тёмный градиентный фон под всё приложение, для контраста стекла */
-.stApp {
-    background: radial-gradient(ellipse 80% 50% at 50% -10%,
-                rgba(255,170,60,0.18), transparent 60%),
-                linear-gradient(180deg, #0B0B0E 0%, #050506 100%);
-}
-
-/* светящаяся анимированная полоса сверху страницы */
+/* светящаяся анимированная полоса сверху страницы — видна в обеих темах */
 .top-glow-bar {
     position: fixed;
-    top: 0; left: 0; width: 100%; height: 3px;
+    top: 0; left: 0; width: 100%; height: 2px;
     background: linear-gradient(90deg, transparent,
                 #FFB347 20%, #FFD84A 50%, #FFB347 80%, transparent);
-    box-shadow: 0 0 16px 3px rgba(255,180,60,0.75),
-                0 0 40px 10px rgba(255,140,20,0.35);
+    box-shadow: 0 0 6px 1px rgba(255,180,60,0.7),
+                0 0 14px 3px rgba(255,140,20,0.3);
     z-index: 999999;
+    pointer-events: none;
     animation: glow-pulse 3s ease-in-out infinite;
 }
 @keyframes glow-pulse {
@@ -117,47 +110,66 @@ st.markdown("""
     50%      { opacity: 1; }
 }
 
-/* заголовок/подпись — светлый текст на тёмном фоне */
-h1, .stCaption, p, label { color: #F0EEE8 !important; }
-
 /* стеклянная кнопка PREDICT COLOR */
 div[data-testid="stButton"] button {
-    background: rgba(255,255,255,0.07) !important;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+    border-radius: 14px !important;
+    transition: all 0.25s ease;
+}
+
+/* стеклянные Metal / Ligand / Geometry selectbox'ы */
+div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px !important;
+}
+
+/* стеклянные Oxidation state / Mixed ligands поля */
+div[data-baseweb="input"],
+div[data-baseweb="base-input"] {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px !important;
+}
+div[data-testid="stNumberInput"] input,
+div[data-testid="stTextInput"] input,
+input[type="text"], input[type="number"] {
+    background: transparent !important;
+}
+
+/* Единая тёмная тема — без зависимости от системных настроек,
+   чтобы выглядела одинаково у всех вне зависимости от их Windows/браузера */
+.stApp, header[data-testid="stHeader"] {
+    background: radial-gradient(ellipse 80% 50% at 50% -10%,
+                rgba(255,170,60,0.18), transparent 60%),
+                linear-gradient(180deg, #0B0B0E 0%, #050506 100%) !important;
+}
+h1, .stCaption, p, label, span { color: #F0EEE8 !important; }
+div[data-testid="stButton"] button {
+    background: rgba(255,255,255,0.07) !important;
     border: 1px solid rgba(255,255,255,0.18) !important;
     color: #FFF !important;
-    border-radius: 14px !important;
     box-shadow: 0 4px 24px rgba(0,0,0,0.25),
                 inset 0 1px 0 rgba(255,255,255,0.12);
-    transition: all 0.25s ease;
 }
 div[data-testid="stButton"] button:hover {
     background: rgba(255,180,60,0.18) !important;
     box-shadow: 0 4px 30px rgba(255,180,60,0.35),
                 inset 0 1px 0 rgba(255,255,255,0.2);
 }
-
-/* стеклянные Metal / Ligand / Geometry selectbox'ы */
 div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
     background: rgba(255,255,255,0.06) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.16) !important;
-    border-radius: 12px !important;
     color: #FFF !important;
 }
-
-/* стеклянные Oxidation state / Mixed ligands поля ввода */
-div[data-testid="stNumberInput"] input,
-div[data-testid="stTextInput"] input {
+div[data-baseweb="input"], div[data-baseweb="base-input"] {
     background: rgba(255,255,255,0.06) !important;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.16) !important;
-    border-radius: 12px !important;
-    color: #FFF !important;
 }
+div[data-testid="stNumberInput"] input,
+div[data-testid="stTextInput"] input,
+input[type="text"], input[type="number"] { color: #FFF !important; }
 div[data-testid="stNumberInput"] button {
     background: rgba(255,255,255,0.06) !important;
     border: 1px solid rgba(255,255,255,0.16) !important;
